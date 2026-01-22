@@ -1,25 +1,21 @@
 import pygame
 import os
 import vector
-
+from Drawable import drawable
+from Movable import movable
 
 class GameEngine(object):
     def __init__(self):
 #---------------------------------------------------------------Objects----------------------------------------------------------------
     #Egg 
-        #Image
-        self.egg = pygame.image.load(os.path.join("Game Sprites.png")).convert()
-        self.egg.set_colorkey((0, 0, 0))
-        #Movement
-        self.eggVec = vector.vec(0, 0)
-        self.eggPos = vector.vec(200, 100)
+        self.egg = movable("Game Sprites.png", vector.vec(200, 100), vector.vec(0,0))
 
 
     def draw(self, drawSurface):
     #Fill Entire Screen to reset display
         drawSurface.fill((0, 50, 255))
     #Draw Egg
-        drawSurface.blit(self.egg, vector.pyVec(self.eggPos))
+        self.egg.draw(drawSurface)
 
     
     def handleEvent(self,event):
@@ -54,28 +50,27 @@ class GameEngine(object):
     #Egg Movement
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_w:
-                self.eggVec[1] = -1
+                self.egg.velocity[1] = -1
             elif event.key == pygame.K_s:
-                self.eggVec[1] = 1
+                self.egg.velocity[1] = 1
             elif event.key == pygame.K_a:
-                self.eggVec[0] = -1
+                self.egg.velocity[0] = -1
             elif event.key == pygame.K_d:
-                self.eggVec[0] = 1
+                self.egg.velocity[0] = 1
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_w:
-                self.eggVec[1] = 0
+                self.egg.velocity[1] = 0
             elif event.key == pygame.K_s:
-                self.eggVec[1] = 0
+                self.egg.velocity[1] = 0
             elif event.key == pygame.K_a:
-                self.eggVec[0] = 0
+                self.egg.velocity[0] = 0
             elif event.key == pygame.K_d:
-                self.eggVec[0] = 0
+                self.egg.velocity[0] = 0
     #More Key Events
         if event.type == pygame.KEYUP:
             pass
 
     def update(self, seconds):
     #Move Egg
-        print(seconds)
-        self.eggPos += self.eggVec * seconds * 100
+        self.egg.update(seconds)
     
