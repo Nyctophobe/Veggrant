@@ -1,4 +1,5 @@
 import pygame
+from random import randint
 from Drawable import Drawable
 from Movable import Mobile, Player
 from os.path import join
@@ -6,11 +7,19 @@ from os.path import join
 class GameEngine(object):
     def __init__(self):
         self.egg = Player((0,0), "Game Sprites.png", (0,0, 16, 16), colorkey = True)
+        self.x = Drawable((randint(50, 350), randint(20, 180)), "Game Sprites.png", (0,0, 16, 16), colorkey = True)
+        self.y = Drawable((randint(50, 350), randint(20, 180)), "Game Sprites.png", (0,0, 16, 16), colorkey = True)
+        self.z = Drawable((randint(50, 350), randint(20, 180)), "Game Sprites.png", (0,0, 16, 16), colorkey = True)
         self.eggSpeed = 100
+
+        self.collidables = [self.x, self.y, self.z]
 
     def draw(self, drawSurface):
         drawSurface.fill((0, 50, 255))
         self.egg.draw(drawSurface)
+        self.x.draw(drawSurface)
+        self.y.draw(drawSurface)
+        self.z.draw(drawSurface)
     
     def handleEvent(self,event):
         self.egg.handleEvent(event)
@@ -46,4 +55,46 @@ class GameEngine(object):
 
     def update(self, seconds):
         self.egg.update(seconds)
-    
+        #Prevents Egg from escaping Window
+        if self.egg.getPosition()[0] <= 0:
+            self.egg.position[0] = 0
+        if self.egg.getPosition()[0] + self.egg.getWidth() >= 400:
+            self.egg.position[0] = 400-16   
+        if self.egg.getPosition()[1] <= 0:
+            self.egg.position[1] = 0
+        if self.egg.getPosition()[1] + self.egg.getWidth() >= 200:
+            self.egg.velocity[1] = 0
+            self.egg.position[1] = 200-16
+            
+        for c in self.collidables:
+            collision = self.egg.getCollisionRect().clip(c.getCollisionRect())
+            if collision.width != 0 and collision.height != 0:
+                if collision.width < collision.height:
+                    self.egg.velocity[0] = 0
+                    if self.egg.getPosition()[0] < c.getPosition()[0]:
+                        self.egg.position[0] -= collision.width
+                    else:
+                        self.egg.position[0] += collision.width
+                else: 
+                    self.egg.velocity[1] = 0
+                    if self.egg.getPosition()[1] < c.getPosition()[1]:
+                        self.egg.position[1] -= collision.height
+                    else:
+                        self.egg.position[1] += collision.height
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            
+            
