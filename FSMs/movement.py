@@ -1,5 +1,5 @@
 from . import AbstractGameFSM
-from utils import vec, magnitude, EPSILON, scale, RESOLUTION
+from util import vec, magnitude, EPSILON, scale, RESOLUTION
 
 from statemachine import State
 
@@ -16,7 +16,7 @@ class MovementFSM(AbstractGameFSM):
 
 
 class AccelerationFSM(MovementFSM):
-    """Axis-based acceleration with gradual stopping."""
+    """Axis-based speederation with gradual stopping."""
     not_moving = State(initial=True)
     
     negative = State()
@@ -28,9 +28,9 @@ class AccelerationFSM(MovementFSM):
     
     increase = not_moving.to(positive) | negative.to(stalemate)
     
-    stop_decrease = negative.to(not_moving) | stalemate.to(positive)
+    stop_decrease = negative.to(not_moving) | stalemate.to(positive) | not_moving.to.itself(internal=True)
     
-    stop_increase = positive.to(not_moving) | stalemate.to(negative)
+    stop_increase = positive.to(not_moving) | stalemate.to(negative) | not_moving.to.itself(internal=True)
     
     stop_all      = not_moving.to.itself(internal=True) | negative.to(not_moving) | \
                     positive.to(not_moving) | stalemate.to(not_moving)
@@ -39,23 +39,23 @@ class AccelerationFSM(MovementFSM):
         self.axis      = axis
         self.direction = vec(0,0)
         self.direction[self.axis] = 1
-        self.accel = 200
+        self.speed = 5000
         
         super().__init__(obj)
 
     def update(self, seconds=0):
         if self == "positive":
-            self.obj.velocity += self.direction * self.accel * seconds
+            self.obj.velocity = self.direction * self.speed  * seconds
         elif self == "negative":
-            self.obj.velocity -= self.direction * self.accel * seconds
+            self.obj.velocity = -self.direction * self.speed * seconds
                 
         elif self == "stalemate":
             pass
         else:
-            if self.obj.velocity[self.axis] > self.accel * seconds:
-                self.obj.velocity[self.axis] -= self.accel * seconds
-            elif self.obj.velocity[self.axis] < -self.accel * seconds:
-                self.obj.velocity[self.axis] += self.accel * seconds
+            if self.obj.velocity[self.axis] > self.speed * seconds:
+                self.obj.velocity[self.axis] = self.speed * seconds
+            elif self.obj.velocity[self.axis] < -self.speed * seconds:
+                self.obj.velocity[self.axis] = -self.speed * seconds
             else:
                 self.obj.velocity[self.axis] = 0
         

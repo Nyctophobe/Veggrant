@@ -1,8 +1,8 @@
 from . import vec
 
-RESOLUTION = vec(600, 300)
+RESOLUTION = vec(640, 320)
 
-WORLD_SIZE = (1200, 600)
+WORLD_SIZE = (640, 320)
 WORLD_SIZE_VEC = vec(WORLD_SIZE[0], WORLD_SIZE[1])
 
 SCALE = 2

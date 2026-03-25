@@ -1,139 +1,93 @@
 import pygame
-from . import Drawable, Egg
-from gameObjects import Mobile, Player
-from util import vec, RESOLUTION
-
+import os
+from . import Drawable, Egg, Human, Dog
+from util import SoundManager, vec, rectAdd, RESOLUTION
 
 class GameEngine(object):
-    def __init__(self):       
+    def __init__(self):
+        #Main Character       
         self.egg = Egg((0,0))
         self.size = vec(*RESOLUTION)
+
+        #Obstacles
+        self.dog = Dog((0,0), "Dog.png", (0,0))
+        self.human = Human((0,0))
+
+        #Blocks for building Levels
+        self.QBBlack = Drawable((0,0),"QuadBlock.png", (0,0))
+        self.QBBlue = Drawable((0,0), "QuadBlock.png", (1,0))
+        self.QBGreen = Drawable((0,0), "QuadBlock.png", (0,1))
+        self.QBBrown = Drawable((0,0), "QuadBlock.png", (1,1))
+        self.collidables = []
+
+        #Others
         self.background = Drawable((0,0), "background.png")
+        self.sm = SoundManager.getInstance()
     
-    def draw(self, drawSurface):        
-        self.background.draw(drawSurface)
-        
+    def draw(self, drawSurface):  
+        drawSurface.fill(vec(0,200,255))
         self.egg.draw(drawSurface)
-            
+        """
+        self.dog.draw(drawSurface)
+        self.human.draw(drawSurface)"""
+        GameEngine.readLevel(self, drawSurface)
+
     def handleEvent(self, event):
         self.egg.handleEvent(event)
+
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            self.sm.playSFX("Blowing Wind.wav")
     
     def update(self, seconds):
         self.egg.update(seconds)
+        for collid in self.collidables:
+            if self.egg.getCollisionRect().clip(collid):
+                
+                self.egg.grav.hasGround = True
         
         Drawable.updateOffset(self.egg, self.size)
-    """
-    def __init__(self):
-        #self.egg = Player((0,0), "kirby.png", (0,1))
-        self.egg = Player((0,0), "Game Sprites.png", (0, 0, 16, 16), maxSpeed = 1000)
-        self.egg.animate = False
-        self.x = Drawable((randint(50, 50), randint(20, 20)), "Game Sprites.png", (0,0, 16, 16))
-        self.y = Drawable((randint(50, WORLD_SIZE[0]-50), randint(20, WORLD_SIZE[1]-20)), "Game Sprites.png", (0,0, 16, 16))
-        self.z = Drawable((randint(50, WORLD_SIZE[0]-50), randint(20, WORLD_SIZE[1]-20)), "Game Sprites.png", (0,0, 16, 16))
-        self.background = Drawable((0,0), "background.png")
-        self.dragged = None
-
-        self.collidables = [self.x, self.y, self.z]
-
-    def draw(self, drawSurface):
-        self.background.draw(drawSurface)
-        self.egg.draw(drawSurface)
-        self.x.draw(drawSurface)
-        self.y.draw(drawSurface)
-        self.z.draw(drawSurface)
     
-    def handleEvent(self,event):
-        self.egg.handleEvent(event)
-         #Future movement
-                Egg movement will not be like this in the final game. The egg on its own will have very limited movement.
-                The egg will be able to
-                                - Jump (Cannot move while in the air)
-                                - Roll (Each button press rolls a fixed distance)
-                This movement may be altered by other abilities, such as chaning weight or cracking your shell,
-                but all personal movement is tied to those two actions. Any additional movement is due to enviromental factors and how your 
-                abilities interact with it
+    def readLevel(self, drawSurface):
+        file_path = "C:\\Users\\simon\\My Games\\vEggrant\\gameObjects\\level1.txt"
+        file = open(file_path, 'r')
+        columnCount = 0
+        lineCount = -1
 
-                Jumping on its own will need movement, gravity and collision
-                Jumping will also be changed based on the weight of the egg, changing how effective gravity is on the egg.
-                It will also be effected by if the egg is cracked or not, increacing gravity once it reaches its expected height.
+        for line in file:
+            lineCount += 1
+            columnCount = 0
+            for char in line:
+                if not char:
+                    
+                    break
+                #Stone
+                if char == "s":
+                    self.QBBlack.setPosition((16*columnCount, 16*lineCount))
+                    self.QBBlack.draw(drawSurface)
+                #Green
+                elif char == "g":
+                    self.QBGreen.setPosition((16*columnCount, 16*lineCount))
+                    self.QBGreen.draw(drawSurface)
+                    newRect = pygame.Rect(16*columnCount, 16*lineCount, 16, 16)
+                    
+                    if newRect not in self.collidables:
+                        self.collidables.append(newRect)
 
-                Rolling on its own will require movement, gravity and collision
-                Rolling will also be changed based on the weight of the egg, changing how fast it can move.
-                Rolling will also be effected by if the egg is cracked or not, preventing it from falling off edges and instead hang from the yoke
-
-                Cracking will require movement, gravity and collision
-                When the egg hits a surface fast enough, its shell will crack. The speed neede is based off the eggs weight.
-                While the egg is cracked, all movement is altered.
-                Yoke will stick to surfaces, allowing the egg to climb walls, hang under ledges, and prevent exterior methods of movement.
-
-                Boiling will change the hardness & weight of the egg
-                The egg starts out the level completely raw. It is at its lightest, frailest, and stickiest in this state. 
-                The egg can boil itself twice, with its weight and strength increasing, but its stickiness decreasing.
-                
-                These will be my 4 main goals of movement, though they may not be fully implemented in all their interactions
-                
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            position = vec(*event.pos)//SCALE
-            position += Drawable.CAMERA_OFFSET
-            if self.x.getCollisionRect().collidepoint(position):
-                self.dragged = self.x
-                self.mouseOffset = self.x.getPosition() - position
-        elif event.type == pygame.MOUSEBUTTONUP:
-            self.dragged = None
-        elif event.type == pygame.MOUSEMOTION:
-            position = vec(*event.pos)//SCALE
-            position += Drawable.CAMERA_OFFSET
-
-            if self.dragged != None:
-                self.dragged.position = position + self.mouseOffset
-
-    def update(self, seconds):
-        self.egg.update(seconds)
-        #Prevents Egg from escaping Window
-        if self.egg.getPosition()[0] <= 0:
-            self.egg.position[0] = 0
-        if self.egg.getPosition()[0] + self.egg.getWidth() >= WORLD_SIZE_VEC[0]:
-            self.egg.position[0] = WORLD_SIZE_VEC[0]-16   
-        if self.egg.getPosition()[1] <= 0:
-            self.egg.position[1] = 0
-        if self.egg.getPosition()[1] + self.egg.getWidth() >= WORLD_SIZE_VEC[1]:
-            self.egg.velocity[1] = 0
-            self.egg.position[1] = WORLD_SIZE_VEC[1]-16
-            
-        for c in self.collidables:
-            collision = self.egg.getCollisionRect().clip(c.getCollisionRect())
-            if collision.width != 0 and collision.height != 0:
-                if collision.width < collision.height:
-                    self.egg.velocity[0] = 0
-                    if self.egg.getPosition()[0] < c.getPosition()[0]:
-                        self.egg.position[0] -= collision.width
-                    else:
-                        self.egg.position[0] += collision.width
-                else: 
-                    self.egg.velocity[1] = 0
-                    if self.egg.getPosition()[1] < c.getPosition()[1]:
-                        self.egg.position[1] -= collision.height
-                    else:
-                        self.egg.position[1] += collision.height
-        
-        Drawable.CAMERA_OFFSET = self.egg.getPosition() + self.egg.getSize()/2 - RESOLUTION / 2
-
-        for i in range(2):
-            Drawable.CAMERA_OFFSET[i] = max(0, min(Drawable.CAMERA_OFFSET[i], WORLD_SIZE[i] - RESOLUTION[i]))
-
-"""
-
-
-
-
-
-
-
-
-
-
-
-
-
-            
-            
+                #Blue
+                elif char == "b":
+                    self.QBBlue.setPosition((16*columnCount, 16*lineCount))
+                    self.QBBlue.draw(drawSurface)
+                #Tree
+                elif char == "t":
+                    self.QBBrown.setPosition((16*columnCount, 16*lineCount))
+                    self.QBBrown.draw(drawSurface)
+                elif char == "d":
+                    self.dog.setPosition((16*columnCount, 16*lineCount))
+                    self.dog.draw(drawSurface)
+                elif char == "h":
+                    self.human.setPosition((16*columnCount, 16*lineCount))
+                    self.human.draw(drawSurface)
+                else:
+                    pass
+                columnCount += 1
+    

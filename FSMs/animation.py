@@ -1,5 +1,5 @@
 from . import AbstractGameFSM
-from utils import magnitude, EPSILON, SpriteManager
+from util import magnitude, EPSILON, SpriteManager
 
 from statemachine import State
 

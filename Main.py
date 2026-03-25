@@ -7,7 +7,7 @@ Author: Simon Lopez-Trujillo, Elizabeth Matthews
 #Imports
 import pygame
 from gameObjects import GameEngine
-from util import RESOLUTION, SCALE
+from util import SoundManager, RESOLUTION, SCALE
 UPSCALED = RESOLUTION * SCALE
 
 #____________________________________________________________Game Setup____________________________________________________________
@@ -22,6 +22,9 @@ def main():
     game = GameEngine()
 
     RUNNING = True
+
+    sm = SoundManager.getInstance()
+    sm.playBGM("Evening.mp3")
 #____________________________________________________________Main Loop Start____________________________________________________________   
     while RUNNING:
     

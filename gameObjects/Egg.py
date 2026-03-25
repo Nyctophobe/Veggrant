@@ -1,18 +1,18 @@
+from pygame import Rect
 from . import Mobile
-from FSMs import WalkingFSM, AccelerationFSM
-from util import vec, RESOLUTION
+from FSMs import WalkingFSM, AccelerationFSM, GravityFSM
+from util import vec, rectAdd, RESOLUTION
 
 from pygame.locals import *
-
-import pygame
 import numpy as np
 
 
 class Egg(Mobile):
    def __init__(self, position):
-      super().__init__(position, "egg.png")
+      super().__init__(position, "kirby.png")
         
       # Animation variables specific to Egg
+      
       self.framesPerSecond = 2 
       self.nFrames = 2
       
@@ -33,42 +33,41 @@ class Egg(Mobile):
             
       self.FSManimated = WalkingFSM(self)
       self.LR = AccelerationFSM(self, axis=0)
-      self.UD = AccelerationFSM(self, axis=1)
+      self.grav = GravityFSM(self)
+
+      self.standRect = rectAdd((self.position[0], self.position[1]+16), Rect(0,0,16,2))
       
       
    def handleEvent(self, event):
       if event.type == KEYDOWN:
-         if event.key == K_UP:
-            self.UD.decrease()
-             
-         elif event.key == K_DOWN:
-            self.UD.increase()
-            
-         elif event.key == K_LEFT:
-            self.LR.decrease()
-            
-         elif event.key == K_RIGHT:
-            self.LR.increase()
+         if self.grav.hasGround == True:
+            if event.key == K_a:
+               self.LR.decrease()
+               
+            elif event.key == K_d:
+               self.LR.increase()
+
+         if event.key == K_w and self.LR == 'not_moving':
+            self.grav.jump()
             
       elif event.type == KEYUP:
-         if event.key == K_UP:
-            self.UD.stop_decrease()
-             
-         elif event.key == K_DOWN:
-            self.UD.stop_increase()
-             
-            
-         elif event.key == K_LEFT:
-            self.LR.stop_decrease()
-            
-         elif event.key == K_RIGHT:
-            self.LR.stop_increase()
+         if self.grav.hasGround == True:
+            if event.key == K_a:
+               self.LR.stop_decrease()
+               
+            elif event.key == K_d:
+               self.LR.stop_increase()
+         if event.key == K_d:
+            self.grav.fall()
    
    def update(self, seconds): 
       self.LR.update(seconds)
-      self.UD.update(seconds)
+      self.grav.update(seconds)
+      
       
       super().update(seconds)
-   
+
+   def getStandRect(self):
+      return self.standRect
    
   
