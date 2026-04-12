@@ -1,5 +1,5 @@
 import pygame
-from util import SpriteManager, SCALE, RESOLUTION, vec, rectAdd
+from util import SpriteManager, SCALE, RESOLUTION, vec, rectAdd, pyVec
 
 class Drawable(object):
 
@@ -31,15 +31,33 @@ class Drawable(object):
         
         return newPos
     
-    def __init__(self, position=vec(0,0), fileName="", offset=None):
+    def __init__(self, position=vec(0,0), fileName="", offset=None, rotate = False, angle = 0):
         if fileName != "":
             self.image = SpriteManager.getInstance().getSprite(fileName, offset)
-        
         self.position=vec(*position)
         self.imageName = fileName
+        self.flipImage = [False, False]
+        self.rotate = rotate
+        self.angle = angle
+        self.original = self.image
+    
+    def setDrawPosition(self):
+        if self.rotate:
+            self.image = pygame.transform.rotate(self.original, self.angle)
+            center = vec(*self.original.get_rect().center)
+            rotatedCenter = vec(*self.image.get_rect().center)
+            self.drawPosition = self.position + center - rotatedCenter
+                
+        else:
+            self.drawPosition = self.position
     
     def draw(self, drawSurface):
-      drawSurface.blit(self.image, list(map(int, self.position - Drawable.CAMERA_OFFSET)))
+        self.setDrawPosition()
+        blitImage = pygame.transform.flip(self.image, *self.flipImage)
+        
+        drawSurface.blit(blitImage,
+                         pyVec(self.drawPosition - Drawable.CAMERA_OFFSET)) 
+
          
     def getSize(self):
         return vec(*self.image.get_size())    

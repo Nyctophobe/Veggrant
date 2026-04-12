@@ -3,8 +3,8 @@ from util import SpriteManager
 
 class Animated(Drawable):
 
-    def __init__(self, position=(0,0), fileName=""):
-        super().__init__(position, fileName, (0,0))
+    def __init__(self, position=(0,0), fileName="", rotate = False,  angle = 0):
+        super().__init__(position, fileName, (0,0), rotate,  angle)
         self.fileName = fileName
         self.row = 1
         self.frame = 0
@@ -29,3 +29,4 @@ class Animated(Drawable):
             self.animationTimer -= 1 / self.framesPerSecond
             self.image = SpriteManager.getInstance().getSprite(self.fileName,
                                         (self.frame, self.row))
+            self.original = self.image

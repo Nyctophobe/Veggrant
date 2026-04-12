@@ -24,11 +24,11 @@ class AccelerationFSM(MovementFSM):
     
     stalemate = State()
     
-    decrease  = not_moving.to(negative) | positive.to(stalemate)
+    decrease  = not_moving.to(negative) | positive.to(stalemate) | negative.to.itself(internal=True)
     
-    increase = not_moving.to(positive) | negative.to(stalemate)
+    increase = not_moving.to(positive) | negative.to(stalemate) | positive.to.itself(internal=True)
     
-    stop_decrease = negative.to(not_moving) | stalemate.to(positive) | not_moving.to.itself(internal=True)
+    stop_decrease = negative.to(not_moving) | stalemate.to(positive) | not_moving.to.itself(internal=True) | positive.to.itself(internal=True)
     
     stop_increase = positive.to(not_moving) | stalemate.to(negative) | not_moving.to.itself(internal=True)
     
@@ -39,24 +39,24 @@ class AccelerationFSM(MovementFSM):
         self.axis      = axis
         self.direction = vec(0,0)
         self.direction[self.axis] = 1
-        self.speed = 5000
+        self.speed = 50
         
         super().__init__(obj)
 
     def update(self, seconds=0):
         if self == "positive":
-            self.obj.velocity = self.direction * self.speed  * seconds
+            self.obj.velocity[0] = self.direction[0] * self.speed  * seconds
         elif self == "negative":
-            self.obj.velocity = -self.direction * self.speed * seconds
+            self.obj.velocity[0] = -self.direction[0] * self.speed * seconds
                 
         elif self == "stalemate":
             pass
         else:
-            if self.obj.velocity[self.axis] > self.speed * seconds:
-                self.obj.velocity[self.axis] = self.speed * seconds
-            elif self.obj.velocity[self.axis] < -self.speed * seconds:
-                self.obj.velocity[self.axis] = -self.speed * seconds
-            else:
+            if self.obj.velocity[self.axis] > self.speed * seconds *100:
+                self.obj.velocity[self.axis] = self.speed * seconds * 100
+            elif self.obj.velocity[self.axis] < -self.speed * seconds *100:
+                self.obj.velocity[self.axis] = -self.speed * seconds *100
+            elif self.obj.getInteracted() == False:
                 self.obj.velocity[self.axis] = 0
         
         

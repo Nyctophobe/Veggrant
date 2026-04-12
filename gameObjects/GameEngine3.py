@@ -1,29 +1,30 @@
 import pygame
-from . import Drawable, Egg, Human, Dog
+from . import Drawable, Egg, Human, Horse
 from util import SoundManager, vec, RESOLUTION, FONT
 
-class GameEngine(object):
+class GameEngine3(object):
     def __init__(self):
         self.collidables = []
-        self.jump = False
-        self.f = False
-        self.fBox = pygame.Rect(16*30,16*6, 50, 5)
-        self.winBox = pygame.Rect(16*24,16*8, 16, 16)
+        self.winBox = pygame.Rect(16*19,16*2, 16, 16)
         self.gameWin = False
 
+        self.standDelayA = 0
+        self.standDelayB = 0
+
         #Main Character       
-        self.egg = Egg((0,18*16))
-        self.startPos = (0,18*16)
+        self.egg = Egg((16*20,16*18))
+        self.startPos = (16*20,16*18)
         self.size = vec(*RESOLUTION)
 
-        #Obstacles
-        self.dog = Dog(11, 20, 17, (16*15,16*16), "Dog.png")
-        self.humanOne = Human("right", (16*5,16*13), "Human.png")
-        self.humanTwo = Human("left", (16*12,16*13), "Human.png")
+        #Enemies
+        self.humanOne = Human("left", (16*29, 16*13), "Human.png")
+        self.humanOne.flipImage[0] = True
+        self.humanTwo = Human("left", (16*20, 16*13), "Human.png")
         self.humanTwo.flipImage[0] = True
-        self.humanThree = Human("left", (16*35,16*13), "Human.png", (pygame.Rect(16*31,16*30, 16*3, 5), (1, 16*7)))
+        self.humanThree = Human("left", (16*29, 16*3), "Human.png", (pygame.Rect(16*29, 16*1, 5, 16*10), (16*31, 16*9)))
         self.humanThree.flipImage[0] = True
-        self.collidables.append(self.humanThree.platform)
+        self.horseOne = Horse((16*7, 16*14), "horse.png", True, 90)
+        self.horseTwo = Horse((16*2, 16*14), "horse.png")
 
         #Blocks for building Levels
         self.BrownDecor = Drawable((0,0),"Blocks.png", (0,0))
@@ -44,49 +45,42 @@ class GameEngine(object):
         #Others
         self.background = Drawable((0,0), "background.png")
         self.sm = SoundManager.getInstance()
-
-        self.dog.animate = False
     
     def draw(self, drawSurface):  
         drawSurface.fill(vec(0,200,255))
+        
+        #Level
+        GameEngine3.readLevel(self, drawSurface)
 
         #Enemies
         self.humanOne.draw(drawSurface)
         self.humanTwo.draw(drawSurface)
         self.humanThree.draw(drawSurface)
         pygame.draw.rect(drawSurface, (150, 75, 0), self.humanThree.platform)
-        
-        
-        self.dog.draw(drawSurface)
-        #pygame.draw.rect(drawSurface, (255, 0, 0), self.dog.reactCollid)
-        
+
+        self.horseOne.draw(drawSurface)
+        self.horseTwo.draw(drawSurface)
+
         #Egg
         self.egg.draw(drawSurface)
         #pygame.draw.rect(drawSurface, (255, 0, 0),self.egg.getStandRect())
+        if self.gameWin == True:
+            drawSurface.blit(FONT.render("WINNN", True, (255,0,0)), (16*18,16*1))
 
-        #Level
-        GameEngine.readLevel(self, drawSurface)
-
-        if self.jump == True:
-            drawSurface.blit(FONT.render("Jump", True, (255,0,0)), (16*9,16*13))
-        if self.f == True:
-            drawSurface.blit(FONT.render("Press B to be Bouncy", True, (255,0,0)), (16*30,16*5))
-        drawSurface.blit(FONT.render("Goal", True, (255,0,0)), (16*23,16*7))
-        drawSurface.blit(FONT.render("-->", True, (255,0,0)), (16*23,16*8))
-        self.Cloud.draw(drawSurface)
-
-        #pygame.draw.rect(drawSurface, (255, 0, 0), self.winBox)
+        
 
     def handleEvent(self, event):
         self.egg.handleEvent(event)
 
         if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
             self.egg.setPosition(self.startPos)
+            self.humanOne.position = (16*29, 16*13)
+            self.humanTwo.position = (16*20, 16*13)
             self.humanThree.setMoveIt(False)
-            self.humanThree.platform[0] = 16*30
-            self.humanThree.platform[1] = 16*30
-            self.dog.velocity = vec(0,0)
-            self.dog.position = (16*15,16*16) 
+            self.humanThree.platform[0] = 16*29
+            self.humanThree.platform[1] = 16*1
+            self.humanThree.arrive = True
+
         if event.type == pygame.MOUSEBUTTONDOWN:
             self.egg.grav.fall()
             self.egg.setPosition((pygame.mouse.get_pos()[0]/2, pygame.mouse.get_pos()[1]/2))
@@ -94,59 +88,109 @@ class GameEngine(object):
     def update(self, seconds):
         #Egg
         self.egg.update(self.collidables, seconds)
-        if self.egg.position[1]<=16*16 and self.egg.position[1]>=16*7:
-            if self.egg.position[0] >=16*31 and self.egg.position[0]<16*35:
-                self.egg.setLockDown(True)
-        else:
-            self.egg.setLockDown(False)
         Drawable.updateOffset(self.egg, self.size)
+        if self.egg.position[1] > 16*20:
+            self.egg.position = (16*14, 16*18)
 
         #Enemies
-        self.dog.update(seconds)
-        if self.egg.getCollisionRect().clip(self.dog.getReactCollid()):
+        self.horseOne.update(seconds)
+        if self.horseOne.getReactCollid().clip(self.humanOne.getReactCollid()):
+            self.horseOne.chill = True
+            pass
+        elif self.egg.getCollisionRect().clip(self.horseOne.getReactCollid()):
+            self.horseOne.chill = False
+            if self.egg.grav.hasGround == True and self.egg.getInteracted() == False:
+                self.egg.position[1] = self.egg.position[1]- 3
+            self.egg.grav.jump()
+            self.egg.setInteracted(True)
+            self.egg.setBypass(True)
+            self.egg.grav.jumpSpeed = 400
+            self.egg.velocity[0] = 300
+        else:
+            self.horseOne.chill = False
+
+        self.horseTwo.update(seconds)
+        if self.egg.getCollisionRect().clip(self.horseTwo.getReactCollid()):
+            if self.egg.grav.hasGround == True and self.egg.getInteracted() == False:
+                self.egg.position[1] = self.egg.position[1]- 3
+            self.egg.grav.jump()
             self.egg.LR.stop_all()
             self.egg.setInteracted(True)
-            self.egg.maxVelocity = self.egg.trackMaxVel
-            self.egg.LR.speed = 5000
-            self.egg.setBypass(False)
-            #disable egg movement and make it follow dog reactCollid
-            self.egg.position = (self.dog.getReactCollid()[0], self.dog.getReactCollid()[1])
-            self.dog.fetch()
-            self.egg.setLockDown(True)
-            
+            self.egg.setBypass(True)
+            self.egg.grav.jumpSpeed = 650
+            self.egg.velocity[0] = -50
 
         self.humanOne.update(seconds)
-        if self.egg.getCollisionRect().clip(self.humanOne.getReactCollid()):
-            self.jump = True
-            if self.egg.grav.hasGround == False and self.egg.grav != "falling" and self.egg.getInteracted() == False:
-                self.egg.setInteracted(True)
-                self.egg.setBypass(True)
-                self.humanOne.setKick(True)
-                self.egg.grav.jumpSpeed = 400
-                self.egg.velocity[0] = 400
-        else:
-            self.jump = False
+        self.humanTwo.update(seconds)
+        self.humanThree.update(seconds)
+        if self.humanThree.arrive == True:
+            if self.egg.getCollisionRect().clip(self.humanOne.getReactCollid()):
+                if self.egg.grav.hasGround == False and self.egg.grav != "falling" and self.egg.getInteracted() == False:
+                    self.humanOne.arrive = False
+            if self.humanOne.arrive == False:
+                self.humanOne.shuffle("special1", (16*8, 16*13))
+            if self.humanOne.position[0] <= 16*8:
+                self.standDelayA += 1
+            if self.standDelayA >= 75:
+                self.humanOne.shuffle("special2", (16*29, 16*13))
+            if self.humanOne.position[0] == 16*29:
+                        self.standDelayA = 0
         
+        else:
+            if (self.humanOne.position[0] <=16*26 and self.humanOne.position[0] >=16*25)  or self.humanTwo.position[0] >=16*26:
+                if self.humanTwo.getCollisionRect().clip(self.humanThree.platform):
+                    self.humanTwo.shuffle("rightup", (16*26, 16*4))
+                    if self.humanOne.position[0] >= 16*26:
+                        self.humanOne.shuffle("rightdown", (16*29, 16*13))
+                    else: 
+                        self.humanOne.shuffle("leftdown", (16*8, 16*13))
+                        self.humanOne.arrive = False
+                elif self.humanOne.getCollisionRect().clip(self.humanThree.platform):
+                    self.humanOne.shuffle("leftup", (16*26, 16*4))
+                    self.humanTwo.shuffle("leftdown", (16*20, 16*13))
+                    if self.humanOne.position[1] == 16*4:
+                        self.standDelayB = 1
+                        self.humanThree.arrive = True
+                        
+                    
+                
+            else:
+                if self.humanOne.position[0] >= 16*26:
+                    self.humanOne.shuffle("leftup", (16*1, 16*4))
+                else: 
+                    self.humanOne.shuffle("rightup", (16*40, 16*4))
+                self.humanTwo.shuffle("rightup", (16*40, 16*4))
+
+        if self.standDelayB >= 1 and self.standDelayB <300:
+            self.standDelayB += 1
+        if self.standDelayB == 300:
+            self.humanOne.shuffle("downright", (16*31, 16*13))
+            if self.humanOne.position[0] == (16*29) and self.humanOne.position[1] == (16*13):
+                self.humanThree.setMoveIt(True)
+                self.standDelayB = 0
+            
+
+
         self.humanTwo.update(seconds)
         if self.egg.getCollisionRect().clip(self.humanTwo.getReactCollid()):
             if self.egg.grav.hasGround == False and self.egg.grav != "falling" and self.egg.getInteracted() == False:
                 self.egg.setInteracted(True)
                 self.egg.setBypass(True)
                 self.humanTwo.setKick(True)
-                self.egg.grav.jumpSpeed = 400
-                self.egg.velocity[0] = -300
+                self.egg.grav.jumpSpeed = 600
+                self.egg.velocity[0] = -250        
         
-        self.humanThree.update(seconds)
         if self.egg.getCollisionRect().clip(self.humanThree.getReactCollid()):
             if self.egg.grav.hasGround == False and self.egg.grav != "falling" and self.egg.getInteracted() == False:
                 self.humanThree.setMoveIt(True)
-        if self.humanThree.moveIt == True:
-            self.humanThree.movePlatform()
-        
-        if self.egg.getCollisionRect().clip(self.fBox):
-            self.f = True
-        else:
-            self.f = False
+        if self.humanThree.getMoveIt() == True:
+            self.humanThree.moveRope()
+
+
+
+
+
+        #Win Box
         if self.egg.getCollisionRect().clip(self.winBox):
             self.gameWin = True
         
@@ -154,7 +198,7 @@ class GameEngine(object):
     
     
     def readLevel(self, drawSurface):
-        file_path = "Levels\\level1.txt"
+        file_path = "Levels\\level3.txt"
         file = open(file_path, 'r')
         columnCount = 0
         lineCount = -1
@@ -232,9 +276,10 @@ class GameEngine(object):
                 else:
                     pass
                 columnCount += 1
+    
 
     def getWin(self):
-        return self.gameWin
+        return False
     def getWin2(self):
         return False
     

@@ -1,0 +1,20 @@
+yyyy                              p     G                                        
+yyyy                                    G
+yyyy    p          n                    G 
+yyy            GGGGGG                   G
+              GGtGGGtGG                 G
+                 ttt   p                G                                     
+    RRRRR        t                      G
+   r     r      tt                      G
+  r       r GGG t                       G 
+  r       rGGtGGt  GGGG        BBBBBB   G
+ R         R  ttt GGtGGGG   BBBBBBBBBBBBG
+ R         R   t GGt       BBBB      BBBG
+ RRRrrRRRRRR   t t        BBtt        ttG
+ ttttttttttt   tt           t          tG
+ tt   t   tt   t            t          tG
+ t    t    t   t            t          tG
+ t    t    t   t            t      ttt tG
+ ttttttttttt   t            t       t  tG
+ ttttttttttt   t            t       t  tG
+GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG

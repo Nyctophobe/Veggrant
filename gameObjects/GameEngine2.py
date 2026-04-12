@@ -1,29 +1,28 @@
 import pygame
-from . import Drawable, Egg, Human, Dog
+from . import Drawable, Egg, Human
 from util import SoundManager, vec, RESOLUTION, FONT
 
-class GameEngine(object):
+class GameEngine2(object):
     def __init__(self):
         self.collidables = []
-        self.jump = False
-        self.f = False
-        self.fBox = pygame.Rect(16*30,16*6, 50, 5)
-        self.winBox = pygame.Rect(16*24,16*8, 16, 16)
+        self.winBox = pygame.Rect(16*38,16*18, 16, 16)
         self.gameWin = False
+        self.sticky = False
+        self.stickyBox = pygame.Rect(16*2, 16*18, 16*3, 16)
+        self.bouncy = False
+        self.bouncyBox = pygame.Rect(16*6, 16*8, 16, 16)
 
         #Main Character       
-        self.egg = Egg((0,18*16))
-        self.startPos = (0,18*16)
+        self.egg = Egg((16*15,16*18))
+        self.startPos = (16*15,16*18)
         self.size = vec(*RESOLUTION)
 
-        #Obstacles
-        self.dog = Dog(11, 20, 17, (16*15,16*16), "Dog.png")
-        self.humanOne = Human("right", (16*5,16*13), "Human.png")
-        self.humanTwo = Human("left", (16*12,16*13), "Human.png")
-        self.humanTwo.flipImage[0] = True
-        self.humanThree = Human("left", (16*35,16*13), "Human.png", (pygame.Rect(16*31,16*30, 16*3, 5), (1, 16*7)))
-        self.humanThree.flipImage[0] = True
-        self.collidables.append(self.humanThree.platform)
+        #Enemies
+        self.humanOne = Human("right", (16*6,16*13), "Human.png", (pygame.Rect(16*3, 16*19, 45, 5), (16*17, 16*11)))
+        self.kiteDelay = 0
+        self.collidables.append(self.humanOne.platform)
+        self.humanTwo = Human("right", (16*26, 16*6), "Human.png", (pygame.Rect(16*30, 16*18.7, 16*4, 5), (16*24, 16*11)))
+        self.collidables.append(self.humanTwo.platform)
 
         #Blocks for building Levels
         self.BrownDecor = Drawable((0,0),"Blocks.png", (0,0))
@@ -44,37 +43,32 @@ class GameEngine(object):
         #Others
         self.background = Drawable((0,0), "background.png")
         self.sm = SoundManager.getInstance()
-
-        self.dog.animate = False
     
     def draw(self, drawSurface):  
         drawSurface.fill(vec(0,200,255))
 
-        #Enemies
+        #Enemies pt 1
         self.humanOne.draw(drawSurface)
-        self.humanTwo.draw(drawSurface)
-        self.humanThree.draw(drawSurface)
-        pygame.draw.rect(drawSurface, (150, 75, 0), self.humanThree.platform)
+        pygame.draw.rect(drawSurface, (255,255,255), self.humanOne.platform)
         
-        
-        self.dog.draw(drawSurface)
-        #pygame.draw.rect(drawSurface, (255, 0, 0), self.dog.reactCollid)
-        
-        #Egg
-        self.egg.draw(drawSurface)
-        #pygame.draw.rect(drawSurface, (255, 0, 0),self.egg.getStandRect())
 
         #Level
-        GameEngine.readLevel(self, drawSurface)
+        GameEngine2.readLevel(self, drawSurface)
+        
+        #Enemies pt 2
+        self.humanTwo.draw(drawSurface)
+        pygame.draw.rect(drawSurface, (150, 75, 0), self.humanTwo.platform)
 
-        if self.jump == True:
-            drawSurface.blit(FONT.render("Jump", True, (255,0,0)), (16*9,16*13))
-        if self.f == True:
-            drawSurface.blit(FONT.render("Press B to be Bouncy", True, (255,0,0)), (16*30,16*5))
-        drawSurface.blit(FONT.render("Goal", True, (255,0,0)), (16*23,16*7))
-        drawSurface.blit(FONT.render("-->", True, (255,0,0)), (16*23,16*8))
-        self.Cloud.draw(drawSurface)
+        #Egg
+        self.egg.draw(drawSurface)
 
+        #other
+        if self.bouncy == True:
+            drawSurface.blit(FONT.render("Bouncing infront will ", True, (255,0,0)), (16*4,16*5))
+            drawSurface.blit(FONT.render("activate Human", True, (255,0,0)), (16*4,16*6))
+        if self.sticky == True:
+            drawSurface.blit(FONT.render("Press C to Stick", True, (255,0,0)), (16*2,16*15))
+            drawSurface.blit(FONT.render("to Solid Blocks", True, (255,0,0)), (16*2,16*16))
         #pygame.draw.rect(drawSurface, (255, 0, 0), self.winBox)
 
     def handleEvent(self, event):
@@ -82,71 +76,59 @@ class GameEngine(object):
 
         if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
             self.egg.setPosition(self.startPos)
-            self.humanThree.setMoveIt(False)
-            self.humanThree.platform[0] = 16*30
-            self.humanThree.platform[1] = 16*30
-            self.dog.velocity = vec(0,0)
-            self.dog.position = (16*15,16*16) 
+            self.humanOne.setMoveIt(False)
+            self.humanOne.platform[0] = 16*3 
+            self.humanOne.platform[1] = 16*19
+            self.humanTwo.platform[0] = 16*30
         if event.type == pygame.MOUSEBUTTONDOWN:
             self.egg.grav.fall()
             self.egg.setPosition((pygame.mouse.get_pos()[0]/2, pygame.mouse.get_pos()[1]/2))
+
     
     def update(self, seconds):
         #Egg
         self.egg.update(self.collidables, seconds)
-        if self.egg.position[1]<=16*16 and self.egg.position[1]>=16*7:
-            if self.egg.position[0] >=16*31 and self.egg.position[0]<16*35:
-                self.egg.setLockDown(True)
-        else:
-            self.egg.setLockDown(False)
         Drawable.updateOffset(self.egg, self.size)
 
-        #Enemies
-        self.dog.update(seconds)
-        if self.egg.getCollisionRect().clip(self.dog.getReactCollid()):
-            self.egg.LR.stop_all()
-            self.egg.setInteracted(True)
-            self.egg.maxVelocity = self.egg.trackMaxVel
-            self.egg.LR.speed = 5000
-            self.egg.setBypass(False)
-            #disable egg movement and make it follow dog reactCollid
-            self.egg.position = (self.dog.getReactCollid()[0], self.dog.getReactCollid()[1])
-            self.dog.fetch()
-            self.egg.setLockDown(True)
-            
+        if self.egg.position[1] > 16*22:
+            self.egg.setPosition(self.startPos)
+            self.humanOne.setMoveIt(False)
+            self.humanOne.platform[0] = 16*3 
+            self.humanOne.platform[1] = 16*18.8
 
+        #Enemies
         self.humanOne.update(seconds)
         if self.egg.getCollisionRect().clip(self.humanOne.getReactCollid()):
-            self.jump = True
             if self.egg.grav.hasGround == False and self.egg.grav != "falling" and self.egg.getInteracted() == False:
-                self.egg.setInteracted(True)
-                self.egg.setBypass(True)
-                self.humanOne.setKick(True)
-                self.egg.grav.jumpSpeed = 400
-                self.egg.velocity[0] = 400
-        else:
-            self.jump = False
+                self.humanOne.setMoveIt(True)
+        if self.humanOne.getMoveIt() == True:
+            self.humanOne.moveKite()
+        if self.humanOne.destination == self.humanOne.positionDown:
+            self.kiteDelay += 1
+            if self.kiteDelay >= 100:
+                self.humanOne.setMoveIt(True)
+        if self.humanOne.destination == self.humanOne.positionUp:
+                    self.kiteDelay = 0
         
         self.humanTwo.update(seconds)
         if self.egg.getCollisionRect().clip(self.humanTwo.getReactCollid()):
             if self.egg.grav.hasGround == False and self.egg.grav != "falling" and self.egg.getInteracted() == False:
-                self.egg.setInteracted(True)
-                self.egg.setBypass(True)
-                self.humanTwo.setKick(True)
-                self.egg.grav.jumpSpeed = 400
-                self.egg.velocity[0] = -300
-        
-        self.humanThree.update(seconds)
-        if self.egg.getCollisionRect().clip(self.humanThree.getReactCollid()):
-            if self.egg.grav.hasGround == False and self.egg.grav != "falling" and self.egg.getInteracted() == False:
-                self.humanThree.setMoveIt(True)
-        if self.humanThree.moveIt == True:
-            self.humanThree.movePlatform()
-        
-        if self.egg.getCollisionRect().clip(self.fBox):
-            self.f = True
+                self.humanTwo.setMoveIt(True)
+        if self.humanTwo.getMoveIt() == True:
+            self.humanTwo.moveBridge()
+
+        #other
+        if self.egg.getCollisionRect().clip(self.stickyBox):
+            self.sticky = True
         else:
-            self.f = False
+            self.sticky = False 
+        
+        if self.egg.getCollisionRect().clip(self.bouncyBox):
+            self.bouncy = True
+        else:
+            self.bouncy = False   
+        
+        #Win Box
         if self.egg.getCollisionRect().clip(self.winBox):
             self.gameWin = True
         
@@ -154,7 +136,7 @@ class GameEngine(object):
     
     
     def readLevel(self, drawSurface):
-        file_path = "Levels\\level1.txt"
+        file_path = "Levels\\level2.txt"
         file = open(file_path, 'r')
         columnCount = 0
         lineCount = -1
@@ -204,6 +186,8 @@ class GameEngine(object):
                     self.BlackBlock.setPosition((16*columnCount, 16*lineCount))
                     self.BlackBlock.draw(drawSurface)
                     newRect = pygame.Rect(16*columnCount, 16*lineCount, 16, 16)
+                    if newRect not in self.collidables:
+                        self.collidables.append(newRect)
                 #Yellow
                 elif char == "y":
                     self.YellowDecor.setPosition((16*columnCount, 16*lineCount))
@@ -232,9 +216,10 @@ class GameEngine(object):
                 else:
                     pass
                 columnCount += 1
+    
 
     def getWin(self):
-        return self.gameWin
-    def getWin2(self):
         return False
+    def getWin2(self):
+        return self.gameWin
     
